@@ -1,16 +1,21 @@
 import json
+import os
 from pathlib import Path
 
 import pytest
 
-from project.app import app, db
-
+# Point the app at test.db BEFORE importing it: SQLAlchemy builds its engine at import
+# time, so overriding the config later (in the fixture) would not change the database.
+# This also keeps the tests away from a real DATABASE_URL (e.g. the Render Postgres).
 TEST_DB = "test.db"
+BASE_DIR = Path(__file__).resolve().parent.parent
+os.environ["DATABASE_URL"] = f"sqlite:///{BASE_DIR.joinpath(TEST_DB)}"
+
+from project.app import app, db  # noqa: E402
 
 
 @pytest.fixture
 def client():
-    BASE_DIR = Path(__file__).resolve().parent.parent
     app.config["TESTING"] = True
     app.config["DATABASE"] = BASE_DIR.joinpath(TEST_DB)
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{BASE_DIR.joinpath(TEST_DB)}"
